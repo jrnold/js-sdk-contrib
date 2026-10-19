@@ -20,6 +20,24 @@ describe('targeting', () => {
     jest.resetAllMocks();
   });
 
+  describe('Constant sub-rules that throw', () => {
+    // compiled and interpreted rules both load, and throw only when evaluated
+    const logic = { if: [{ var: 'x' }, 'on', { '<': ['a', 1] }] };
+
+    it('should load', () => {
+      expect(() => new Targeting(logic, logger)).not.toThrow();
+    });
+
+    it('should throw when the sub-rule is evaluated', () => {
+      const targeting = new Targeting(logic, logger);
+      expect(() => targeting.evaluate('flagA', {})).toThrow();
+    });
+
+    it('should still reject unknown methods', () => {
+      expect(() => new Targeting({ if: [{ var: 'x' }, 'on', { nope: [1] }] }, logger)).toThrow();
+    });
+  });
+
   describe('Context injection', () => {
     it('should inject flag key as a property', () => {
       const flagKey = 'flagA';

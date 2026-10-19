@@ -391,6 +391,12 @@ describe('flagd-core error conditions', () => {
         state: 'ENABLED',
         targeting: { if: [true, 'invalid'] },
       },
+      throwingConstantSubRule: {
+        variants: { on: true, off: false },
+        defaultVariant: 'off',
+        state: 'ENABLED',
+        targeting: { if: [{ var: 'x' }, 'on', { '<': ['a', 1] }] },
+      },
     },
     metadata: { flagSetId: 'dev', version: '1' },
   };
@@ -407,6 +413,14 @@ describe('flagd-core error conditions', () => {
     expect(resolved.errorCode).toBe(ErrorCode.FLAG_NOT_FOUND);
     expect(resolved.errorMessage).toBeTruthy();
     expect(resolved.flagMetadata).toEqual({ version: '1', flagSetId: 'dev' });
+  });
+
+  it('should return a general error, not a parse error, when a constant sub-rule throws', () => {
+    // the same in compiled and interpreted mode
+    const resolved = core.resolveBooleanEvaluation('throwingConstantSubRule', false, {});
+    expect(resolved.reason).toBe(StandardResolutionReasons.ERROR);
+    expect(resolved.errorCode).toBe(ErrorCode.GENERAL);
+    expect(resolved.value).toBe(false);
   });
 
   it('should resolve disabled flags with reason DISABLED and caller default', () => {

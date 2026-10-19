@@ -15,7 +15,7 @@ export class Targeting {
   private readonly _engine?: LogicEngine;
   private readonly _logic?: unknown;
 
-  private readonly _useInterpreter: boolean;
+  private _useInterpreter: boolean;
 
   constructor(
     logic: unknown,
@@ -44,9 +44,28 @@ export class Targeting {
     } else {
       // Compilation mode: compile logic into a native function.
       // Faster, but uses new Function() which is blocked in some edge runtimes.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      this._compiledLogic = engine.build(logic) as any;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        this._compiledLogic = engine.build(logic) as any;
+      } catch (err) {
+        // Compiling evaluates constant sub-rules, so one that throws (e.g. {"<": ["a", 1]})
+        // fails the whole build, while the interpreter only throws if it is evaluated.
+        // Interpret such rules so both modes agree; unknown methods still fail to load.
+        if (!Targeting.isEvaluationError(err)) throw err;
+        logger.debug(`Interpreting targeting rule that failed to compile: ${JSON.stringify(err)}`);
+        this._useInterpreter = true;
+        this._engine = engine;
+        this._logic = logic;
+      }
     }
+  }
+
+  /** An error from evaluating a constant sub-rule (NaN or a JSON Logic error), not an unknown method. */
+  private static isEvaluationError(err: unknown): boolean {
+    if (typeof err === 'number' && Number.isNaN(err)) return true;
+    if (!err || typeof err !== 'object' || err instanceof Error) return false;
+    const type = (err as { type?: unknown }).type;
+    return typeof type === 'string' && type !== 'Unknown Operator';
   }
 
   /**
