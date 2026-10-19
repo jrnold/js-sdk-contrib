@@ -44,7 +44,7 @@
     "copy-anything": "^3.0.5",
     "flagsmith-nodejs": "^6.1.0",
     "imurmurhash": "^0.1.4",
-    "json-logic-engine": "4.0.6",
+    "json-logic-engine": "5.0.7",
     "lodash.isempty": "^4.4.0",
     "lodash.isequal": "^4.5.0",
     "lru-cache": "^11.0.0",
